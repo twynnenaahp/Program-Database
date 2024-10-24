@@ -132,7 +132,8 @@
         let jsonData = [];
 
         // Function to read the Excel file and populate the table
-        function handleFile(file) {
+        function handleFile(event) {
+            const file = event.target.files[0];
             const reader = new FileReader();
 
             reader.onload = function(e) {
@@ -285,23 +286,13 @@
             });
         }
 
-        // Automatically select the "source_file.xlsx" file and remove the request to choose a file
+        // File input for uploading the Excel file
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
         fileInput.accept = '.xlsx, .xls';
-        fileInput.style.display = 'none';
+        fileInput.addEventListener('change', handleFile);
         document.body.appendChild(fileInput);
-
-        // Simulate a click on the hidden file input to trigger the file selection dialog
         fileInput.click();
-
-        // Handle the file selection
-        fileInput.addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                handleFile(file);
-            }
-        });
     </script>
 </body>
 </html>
