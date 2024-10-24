@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Profession Program Database</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .version-info {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+        }
+
+        .search-container {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-container input, .search-container select {
+            width: 23%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            margin-bottom: 10px;
+        }
+
+        .search-container button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007BFF;
+            color: #fff;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .search-container button:hover {
+            background-color: #0056b3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007BFF;
+            color: #fff;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .search-container input, .search-container select, .search-container button {
+                width: 100%;
+            }
+
+            table {
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            table {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Health Profession Program Database</h1>
+    <div class="version-info">Version 1.0 - Last Updated: October 10, 2023</div>
+    <div class="search-container">
+        <input type="text" id="institutionNameInput" list="institutionNameOptions" placeholder="Search by Institution Name">
+        <datalist id="institutionNameOptions"></datalist>
+        <select id="stateInput" placeholder="Search by State"></select>
+        <select id="programTypeInput" placeholder="Search by Program Type"></select>
+        <input type="text" id="specialFocusInput" list="specialFocusOptions" placeholder="Search by Special Program Focus">
+        <datalist id="specialFocusOptions"></datalist>
+        <button id="resetButton">Reset</button>
+    </div>
+    <table id="Source_File">
+        <thead>
+            <tr>
+                <th>School Name</th>
+                <th>Program Type</th>
+                <th>State</th>
+                <th>Special Program Focus</th>
+                <th>Public/Private</th>
+                <th>Graduate/Under Graduate</th>
+                <th>Full URL for More Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Rows will be dynamically added here -->
+        </tbody>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
+    <script>
+        let jsonData = [];
+
+        // Function to read the Excel file and populate the table
+        function handleFile(file) {
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                jsonData = XLSX.utils.sheet_to_json(sheet);
+
+                displayData(jsonData);
+                populateDropdowns(jsonData);
+                populateDatalists(jsonData);
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Function to display data in the table
+        function displayData(data) {
+            const tableBody = document.querySelector('#Source_File tbody');
+            tableBody.innerHTML = ''; // Clear existing rows
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item['School Name']}</td>
+                    <td>${item['Program Type']}</td>
+                    <td>${item['State']}</td>
+                    <td>${item['Special Program Focus']}</td>
+                    <td>${item['Public/Private']}</td>
+                    <td>${item['Graduate/Under Graduate']}</td>
+                    <td><a href="${item['Full URL for More Details']}" target="_blank">More Details</a></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Function to populate dropdowns with unique values in alphabetical order
+        function populateDropdowns(data) {
+            const stateDropdown = document.getElementById('stateInput');
+            const programTypeDropdown = document.getElementById('programTypeInput');
+
+            const states = new Set();
+            const programTypes = new Set();
+
+            data.forEach(item => {
+                states.add(item['State']);
+                programTypes.add(item['Program Type']);
+            });
+
+            stateDropdown.innerHTML = '<option value="">Search by State</option>';
+            programTypeDropdown.innerHTML = '<option value="">Search by Program Type</option>';
+
+            // Sort the unique values alphabetically
+            const sortedStates = Array.from(states).sort();
+            const sortedProgramTypes = Array.from(programTypes).sort();
+
+            sortedStates.forEach(state => {
+                const option = document.createElement('option');
+                option.value = state;
+                option.textContent = state;
+                stateDropdown.appendChild(option);
+            });
+
+            sortedProgramTypes.forEach(programType => {
+                const option = document.createElement('option');
+                option.value = programType;
+                option.textContent = programType;
+                programTypeDropdown.appendChild(option);
+            });
+        }
+
+        // Function to populate the datalists with unique options in alphabetical order
+        function populateDatalists(data) {
+            const institutionNameOptions = document.getElementById('institutionNameOptions');
+            const specialFocusOptions = document.getElementById('specialFocusOptions');
+
+            const institutionNames = new Set();
+            const specialFocuses = new Set();
+
+            data.forEach(item => {
+                institutionNames.add(item['School Name']);
+                specialFocuses.add(item['Special Program Focus']);
+            });
+
+            // Sort the unique values alphabetically
+            const sortedInstitutionNames = Array.from(institutionNames).sort();
+            const sortedSpecialFocuses = Array.from(specialFocuses).sort();
+
+            sortedInstitutionNames.forEach(institutionName => {
+                const option = document.createElement('option');
+                option.value = institutionName;
+                institutionNameOptions.appendChild(option);
+            });
+
+            sortedSpecialFocuses.forEach(specialFocus => {
+                const option = document.createElement('option');
+                option.value = specialFocus;
+                specialFocusOptions.appendChild(option);
+            });
+        }
+
+        // Search functionality
+        document.getElementById('institutionNameInput').addEventListener('input', function() {
+            filterTable();
+        });
+
+        document.getElementById('stateInput').addEventListener('change', function() {
+            filterTable();
+        });
+
+        document.getElementById('programTypeInput').addEventListener('change', function() {
+            filterTable();
+        });
+
+        document.getElementById('specialFocusInput').addEventListener('input', function() {
+            filterTable();
+        });
+
+        document.getElementById('resetButton').addEventListener('click', function() {
+            document.getElementById('institutionNameInput').value = '';
+            document.getElementById('stateInput').value = '';
+            document.getElementById('programTypeInput').value = '';
+            document.getElementById('specialFocusInput').value = '';
+            filterTable();
+        });
+
+        function filterTable() {
+            const institutionNameSearchTerm = document.getElementById('institutionNameInput').value.trim().toLowerCase();
+            const stateSearchTerm = document.getElementById('stateInput').value.trim().toLowerCase();
+            const programTypeSearchTerm = document.getElementById('programTypeInput').value.trim().toLowerCase();
+            const specialFocusSearchTerm = document.getElementById('specialFocusInput').value.trim().toLowerCase();
+
+            const rows = document.querySelectorAll('#Source_File tbody tr');
+            rows.forEach(row => {
+                const institutionName = row.children[0].textContent.toLowerCase();
+                const state = row.children[2].textContent.toLowerCase();
+                const programType = row.children[1].textContent.toLowerCase();
+                const specialFocus = row.children[3].textContent.toLowerCase();
+
+                const institutionNameMatch = institutionName.includes(institutionNameSearchTerm);
+                const stateMatch = stateSearchTerm === '' || state.includes(stateSearchTerm);
+                const programTypeMatch = programTypeSearchTerm === '' || programType.includes(programTypeSearchTerm);
+                const specialFocusMatch = specialFocusSearchTerm === '' || specialFocus.includes(specialFocusSearchTerm);
+
+                if (institutionNameMatch && stateMatch && programTypeMatch && specialFocusMatch) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+
+        // Automatically select the "source_file.xlsx" file and remove the request to choose a file
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.xlsx, .xls';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+
+        // Simulate a click on the hidden file input to trigger the file selection dialog
+        fileInput.click();
+
+        // Handle the file selection
+        fileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+    </script>
+</body>
+</html>
